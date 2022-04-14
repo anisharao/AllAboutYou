@@ -1,0 +1,13 @@
+import pandas as pd
+
+df=pd.read_csv("/Users/linalouis/Downloads/Daylio_Abid2.csv")
+df['mood']=df['mood'].str.upper()
+df['activities']=df['activities'].str.upper()
+df=pd.DataFrame(df, columns= ['mood', 'activities'])
+df.head()
+df_split = df.set_index(['mood']).apply(lambda x: x.str.split('|').explode()).reset_index()
+
+df_split['activities']=df_split['activities'].str.strip()
+
+df_split=pd.DataFrame(df_split[df_split['activities'] != 'DOTA 2'])
+df_split.to_csv("/Users/linalouis/Downloads/Mood_Logger2.csv")
