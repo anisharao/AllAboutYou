@@ -1,0 +1,80 @@
+import pymongo as pym      # Interface with Python <--> MongoDB 
+import pandas as pd        # Create Dataframe
+import os                  # find files on system
+import csv                 # to dump as a csv file       
+import json                # convert file to json format
+from bson.code import Code  # helps with map-reduce
+
+
+myclient = pym.MongoClient("mongodb://localhost:27017/")
+mydb = myclient["myDB"]
+mycol = mydb["Mood_Logger"]
+
+agg_result= mycol.aggregate(
+    [
+        
+    
+    {"$group": {
+        "_id": {"mood": "$mood", "activity": "$activities"},  
+        "count": {"$sum" : 1}  
+    }}
+        ,
+    
+    {"$group": {
+        "_id": "$_id.mood",  
+        "activity_count": {"$push":  { "activity": "$_id.activity", "count": "$count" }}
+    }}, 
+        {"$unwind": "$activity_count" }
+        ,
+        {
+        
+        "$group": {
+            "_id": "$_id",
+           
+            "maxCount":{"$max": "$activity_count.count"},
+            "grp": {
+            "$push": {
+                "mood":"$_id",
+                "activity":"$activity_count.activity",
+                "count":"$activity_count.count"
+            }
+        
+        }
+        
+        }
+        },
+        {
+    "$project": {
+        "_id": 0,
+        "MaxMap": {
+            "$setDifference": [{
+                    "$map": {
+                        "input": "$grp",
+                        "as": "grp",
+                        "in": {
+                            "$cond": [{
+                                    "$eq": ["$maxCount", "$$grp.count"]
+                                },
+                                "$$grp",
+                                "false"
+                            ]
+                        }
+                    }
+                },
+                ["false"]
+            ]
+        }
+ 
+    }
+}, {
+    "$unwind": '$MaxMap'
+}, {
+    "$project": {
+        "mood":"$MaxMap.mood",
+        "activity":"$MaxMap.activity",
+        "count":"$MaxMap.count"
+    }
+}
+    ])
+for i in agg_result:
+    print(i)
