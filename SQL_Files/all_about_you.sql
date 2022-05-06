@@ -10,6 +10,7 @@ activity varchar(255));
 
 create table user(
 userID integer(50) primary key not null,
+password varchar(20) not null,
 first_name varchar(255) ,
 last_name varchar(255),
 gender Varchar (10) constraint check (gender in ('Female','Male','Non-Binary/Non-Conforming','Transgender','Prefer Not to Say')),
